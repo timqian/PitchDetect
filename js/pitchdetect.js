@@ -1,96 +1,27 @@
-/*
-The MIT License (MIT)
+window.AudioContext = window.AudioContext || window.webkitAudioContext
 
-Copyright (c) 2014 Chris Wilson
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
-
-window.AudioContext = window.AudioContext || window.webkitAudioContext;
-
-var audioContext = null;
-var isPlaying = false;
-var sourceNode = null;
-var analyser = null;
-var theBuffer = null;
-var DEBUGCANVAS = null;
-var mediaStreamSource = null;
-var detectorElem, 
-	canvasElem,
-	waveCanvas,
-	pitchElem,
-	noteElem,
-	detuneElem,
-	detuneAmount;
-
-window.onload = function() {
-	audioContext = new AudioContext();
-	MAX_SIZE = Math.max(4,Math.floor(audioContext.sampleRate/5000));	// corresponds to a 5kHz signal
-	var request = new XMLHttpRequest();
-	request.open("GET", "../sounds/whistling3.ogg", true);
-	request.responseType = "arraybuffer";
-	request.onload = function() {
-	  audioContext.decodeAudioData( request.response, function(buffer) { 
-	    	theBuffer = buffer;
-		} );
-	}
-	request.send();
-
-	detectorElem = document.getElementById( "detector" );
-	canvasElem = document.getElementById( "output" );
-	DEBUGCANVAS = document.getElementById( "waveform" );
-	if (DEBUGCANVAS) {
-		waveCanvas = DEBUGCANVAS.getContext("2d");
-		waveCanvas.strokeStyle = "black";
-		waveCanvas.lineWidth = 1;
-	}
-	pitchElem = document.getElementById( "pitch" );
-	noteElem = document.getElementById( "note" );
-	detuneElem = document.getElementById( "detune" );
-	detuneAmount = document.getElementById( "detune_amt" );
-
-	detectorElem.ondragenter = function () { 
-		this.classList.add("droptarget"); 
-		return false; };
-	detectorElem.ondragleave = function () { this.classList.remove("droptarget"); return false; };
-	detectorElem.ondrop = function (e) {
-  		this.classList.remove("droptarget");
-  		e.preventDefault();
-		theBuffer = null;
-
-	  	var reader = new FileReader();
-	  	reader.onload = function (event) {
-	  		audioContext.decodeAudioData( event.target.result, function(buffer) {
-	    		theBuffer = buffer;
-	  		}, function(){alert("error loading!");} ); 
-
-	  	};
-	  	reader.onerror = function (event) {
-	  		alert("Error: " + reader.error );
-		};
-	  	reader.readAsArrayBuffer(e.dataTransfer.files[0]);
-	  	return false;
-	};
+var isPlaying = false
+var sourceNode = null
+var analyser = null
+var theBuffer = null
+var mediaStreamSource = null
 
 
+const audioContext = new window.AudioContext()
+const MAX_SIZE = Math.max(4, Math.floor(audioContext.sampleRate / 5000)) // corresponds to a 5kHz signal
 
+const detectorElem = document.getElementById('detector')
+const canvasElem = document.getElementById('output')
+const DEBUGCANVAS = document.getElementById('waveform')
+if (DEBUGCANVAS) {
+	waveCanvas = DEBUGCANVAS.getContext('2d')
+	waveCanvas.strokeStyle = 'black'
+	waveCanvas.lineWidth = 1
 }
+const pitchElem = document.getElementById('pitch')
+const noteElem = document.getElementById('note')
+const detuneElem = document.getElementById('detune')
+const detuneAmount = document.getElementById('detune_amt')
 
 function error() {
     alert('Stream generation failed.');
@@ -102,6 +33,7 @@ function getUserMedia(dictionary, callback) {
         	navigator.getUserMedia ||
         	navigator.webkitGetUserMedia ||
         	navigator.mozGetUserMedia;
+
         navigator.getUserMedia(dictionary, callback, error);
     } catch (e) {
         alert('getUserMedia threw exception :' + e);
@@ -114,7 +46,7 @@ function gotStream(stream) {
 
     // Connect it to the destination.
     analyser = audioContext.createAnalyser();
-    analyser.fftSize = 2048;
+    analyser.fftSize = 2048*2;
     mediaStreamSource.connect( analyser );
     updatePitch();
 }
@@ -134,7 +66,7 @@ function toggleOscillator() {
     sourceNode = audioContext.createOscillator();
 
     analyser = audioContext.createAnalyser();
-    analyser.fftSize = 2048;
+    analyser.fftSize = 2048*2;
     sourceNode.connect( analyser );
     analyser.connect( audioContext.destination );
     sourceNode.start(0);
@@ -188,7 +120,7 @@ function togglePlayback() {
     sourceNode.loop = true;
 
     analyser = audioContext.createAnalyser();
-    analyser.fftSize = 2048;
+    analyser.fftSize = 2048*2;
     sourceNode.connect( analyser );
     analyser.connect( audioContext.destination );
     sourceNode.start( 0 );
@@ -201,7 +133,7 @@ function togglePlayback() {
 
 var rafID = null;
 var tracks = null;
-var buflen = 1024;
+var buflen = 1024*2;
 var buf = new Float32Array( buflen );
 
 var noteStrings = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
